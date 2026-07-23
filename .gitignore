@@ -4,5 +4,6 @@ pc/.vs
 pc/packages
 pc/*/bin
 pc/*/obj
+.vs/
 
 plugin/build

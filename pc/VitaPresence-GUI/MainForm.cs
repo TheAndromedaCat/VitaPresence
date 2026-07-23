@@ -5,6 +5,7 @@ using DiscordRPC.Logging;
 using Newtonsoft.Json;
 using PresenceCommon.Types;
 using VitaPresence_GUI.Properties;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -16,11 +17,14 @@ using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
 using Timer = System.Timers.Timer;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace VitaPresence_GUI
 {
     public partial class MainForm : Form
     {
+        private const int WM_SHOWME = 0x8000; // Definir la constante WM_SHOWME
+
         private Thread listenThread;
         private static Socket client;
         private static DiscordRpcClient rpc;
@@ -39,18 +43,36 @@ namespace VitaPresence_GUI
             listenThread = new Thread(TryConnect);
         }
 
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_SHOWME)
+            {
+                ShowMe();
+            }
+            base.WndProc(ref m);
+        }
+
+        private void ShowMe()
+        {
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = FormWindowState.Normal;
+            }
+            // Asegurarse de que la ventana est� visible y al frente
+            bool top = TopMost;
+            TopMost = true;
+            TopMost = top;
+            Show();
+            Activate();
+        }
+
         private void ConnectButton_Click(object sender, EventArgs e)
         {
             if (connectButton.Text == "Connect")
             {
-                // Check and see if ClientID is empty
                 if (string.IsNullOrWhiteSpace(clientBox.Text))
                 {
-                    Show();
-                    Activate();
-                    UpdateStatus("Client ID cannot be empty", Color.DarkRed);
-                    SystemSounds.Exclamation.Play();
-                    return;
+                    clientBox.Text = PresenceCommon.CoverResolver.DEFAULT_CLIENT_ID;
                 }
 
                 // Check and see if we have an IP
@@ -120,6 +142,7 @@ namespace VitaPresence_GUI
                 addressBox.Enabled = false;
                 clientBox.Enabled = false;
                 updateIntervalBox.Enabled = false;
+                steamGridDbBox.Enabled = false;
             }
             else
             {
@@ -143,6 +166,7 @@ namespace VitaPresence_GUI
                 addressBox.Enabled = true;
                 clientBox.Enabled = true;
                 updateIntervalBox.Enabled = true;
+                steamGridDbBox.Enabled = true;
                 LastTitleID = "";
                 time = null;
             }
@@ -261,13 +285,22 @@ namespace VitaPresence_GUI
                 trayIcon.Icon = Resources.Connected;
                 trayIcon.Text = "VitaPresence (Connected)";
 
+                var coverResult = PresenceCommon.CoverResolver.ResolveCoverImageUrl(
+                    title.Index == 0 ? "mainmenu" : title.TitleID,
+                    title.Index == 0 ? "LiveArea" : title.TitleName,
+                    "psv",
+                    steamGridDbBox.Text,
+                    clientBox.Text
+                );
+                string sourceInfo = coverResult.Item2;
+
                 if (title.Index == 0)
                 {
-                    UpdateStatus("In LiveArea (Connected)", Color.Green);
+                    UpdateStatus($"In LiveArea ({sourceInfo})", Color.Green);
                 }
                 else
                 {
-                    UpdateStatus("Playing [" + title.TitleID + "] (Connected)", Color.Green);
+                    UpdateStatus($"Playing [{title.TitleID}] ({sourceInfo})", Color.Green);
                 }
 
                 if (LastTitleID != title.TitleID)
@@ -281,7 +314,7 @@ namespace VitaPresence_GUI
                         if (checkMainMenu.Checked == false && title.Index == 0)
                             rpc.ClearPresence();
                         else
-                            rpc.SetPresence(PresenceCommon.Utils.CreateDiscordPresence(title, time, stateBox.Text));
+                            rpc.SetPresence(PresenceCommon.Utils.CreateDiscordPresence(title, time, stateBox.Text, steamGridDbBox.Text, clientBox.Text));
                     }
                     ManualUpdate = false;
                     LastTitleID = title.TitleID;
@@ -307,18 +340,23 @@ namespace VitaPresence_GUI
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            if (File.Exists("Config.json"))
+            string configPath = Utils.GetAppDataConfigPath();
+            if (File.Exists(configPath))
             {
-                Config cfg = JsonConvert.DeserializeObject<Config>(File.ReadAllText("Config.json"));
+                Config cfg = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
                 checkTime.Checked = cfg.DisplayTimer;
                 addressBox.Text = cfg.IP;
                 stateBox.Text = cfg.State;
-                clientBox.Text = cfg.Client;
+                clientBox.Text = string.IsNullOrWhiteSpace(cfg.Client) ? PresenceCommon.CoverResolver.DEFAULT_CLIENT_ID : cfg.Client;
+                steamGridDbBox.Text = cfg.SteamGridDBApiKey ?? "";
                 updateIntervalBox.Text = cfg.UpdateInterval;
                 checkTray.Checked = cfg.AllowTray;
                 checkMainMenu.Checked = cfg.DisplayMainMenu;
                 HasSeenMacPrompt = cfg.SeenAutoMacPrompt;
                 UseMacDefault.Checked = cfg.AutoToMac;
+                StartWithSystem.CheckedChanged -= StartWithSystem_CheckedChanged;
+                StartWithSystem.Checked = cfg.StartWithSystem;
+                StartWithSystem.CheckedChanged += StartWithSystem_CheckedChanged;
             }
         }
 
@@ -351,13 +389,17 @@ namespace VitaPresence_GUI
                     Client = clientBox.Text,
                     State = stateBox.Text,
                     UpdateInterval = updateIntervalBox.Text,
+                    SteamGridDBApiKey = steamGridDbBox.Text,
                     DisplayTimer = checkTime.Checked,
                     AllowTray = checkTray.Checked,
                     DisplayMainMenu = checkMainMenu.Checked,
                     SeenAutoMacPrompt = HasSeenMacPrompt,
-                    AutoToMac = UseMacDefault.Checked
+                    AutoToMac = UseMacDefault.Checked,
+                    StartWithSystem = StartWithSystem.Checked
                 };
-                File.WriteAllText("Config.json", JsonConvert.SerializeObject(cfg, Formatting.Indented));
+
+                string configPath = Utils.GetAppDataConfigPath();
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(cfg, Formatting.Indented));
             }
         }
 
@@ -394,5 +436,37 @@ namespace VitaPresence_GUI
         private void CheckMainMenu_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
 
         private void UseMacDefault_CheckedChanged(object sender, EventArgs e) => HasSeenMacPrompt = true;
+
+        private void StartWithSystem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (StartWithSystem.Checked)
+            {
+                AddApplicationToStartup();
+            }
+            else
+            {
+                RemoveApplicationFromStartup();
+            }
+        }
+
+        private void AddApplicationToStartup()
+        {
+            string appName = "VitaPresence";
+            string appPath = Application.ExecutablePath;
+            string configPath = Utils.GetAppDataConfigPath();
+
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+            key.SetValue(appName, $"\"{appPath}\" --config \"{configPath}\"");
+            MessageBox.Show("Added to system startup.");
+        }
+
+        private void RemoveApplicationFromStartup()
+        {
+            string appName = "VitaPresence";
+
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+            key.DeleteValue(appName, false);
+            MessageBox.Show("Removed from system startup.");
+        }
     }
 }

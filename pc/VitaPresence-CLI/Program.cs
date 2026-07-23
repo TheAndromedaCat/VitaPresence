@@ -1,4 +1,4 @@
-﻿using DiscordRPC;
+using DiscordRPC;
 using PresenceCommon;
 using PresenceCommon.Types;
 using System;
@@ -16,13 +16,15 @@ namespace VitaPresence_CLI
         static string LastGame = "";
         static Timestamps time = null;
         static DiscordRpcClient rpc;
+        static string clientId;
+        static string steamGridDbKey;
 
         static int Main(string[] args)
         {
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-            if (args.Length < 2)
+            if (args.Length < 1)
             {
-                Console.WriteLine("Usage: VitaPresence-CLI <IP> <Client ID>");
+                Console.WriteLine("Usage: VitaPresence-CLI <IP> [Client ID] [SteamGridDB Key]");
                 return 1;
             }
 
@@ -32,7 +34,11 @@ namespace VitaPresence_CLI
                 return 1;
             }
 
-             rpc = new DiscordRpcClient(args[1]);
+            clientId = (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1])) ? args[1] : CoverResolver.DEFAULT_CLIENT_ID;
+            steamGridDbKey = args.Length >= 3 ? args[2] : null;
+
+            Console.WriteLine($"Initializing Discord RPC with Client ID: {clientId}");
+            rpc = new DiscordRpcClient(clientId);
 
             if (!rpc.Initialize())
             {
@@ -105,8 +111,7 @@ namespace VitaPresence_CLI
                         }
                         if ((rpc != null && rpc.CurrentPresence == null) || LastGame != title.TitleID)
                         {
-                            rpc.SetPresence(Utils.CreateDiscordPresence(title, time));
-
+                            rpc.SetPresence(Utils.CreateDiscordPresence(title, time, "", steamGridDbKey, clientId));
                             LastGame = title.TitleID;
                         }
                     }
@@ -136,9 +141,9 @@ namespace VitaPresence_CLI
         {
             if (client != null && client.Connected)
                 client.Close();
-            
+
             if (rpc != null && !rpc.IsDisposed)
-                rpc.Dispose();   
+                rpc.Dispose();
         }
     }
 }

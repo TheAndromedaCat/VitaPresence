@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -52,6 +54,13 @@ namespace VitaPresence_GUI
                 }
             }
             return mip;
+        }
+        public static string GetAppDataConfigPath()
+        {
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appDataPath, "VitaPresence");
+            Directory.CreateDirectory(appFolder);
+            return Path.Combine(appFolder, "config.json");
         }
     }
 }

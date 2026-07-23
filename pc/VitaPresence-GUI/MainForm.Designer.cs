@@ -1,4 +1,4 @@
-﻿namespace VitaPresence_GUI
+namespace VitaPresence_GUI
 {
     partial class MainForm
     {
@@ -48,14 +48,17 @@
             this.UseMacDefault = new System.Windows.Forms.CheckBox();
             this.updateIntervallabel = new System.Windows.Forms.Label();
             this.updateIntervalBox = new System.Windows.Forms.TextBox();
+            this.StartWithSystem = new System.Windows.Forms.CheckBox();
+            this.steamGridDbLabel = new System.Windows.Forms.Label();
+            this.steamGridDbBox = new System.Windows.Forms.TextBox();
             this.trayContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // connectButton
             // 
-            this.connectButton.Location = new System.Drawing.Point(88, 216);
+            this.connectButton.Location = new System.Drawing.Point(78, 242);
             this.connectButton.Name = "connectButton";
-            this.connectButton.Size = new System.Drawing.Size(75, 23);
+            this.connectButton.Size = new System.Drawing.Size(100, 28);
             this.connectButton.TabIndex = 13;
             this.connectButton.Text = "Connect";
             this.connectButton.UseVisualStyleBackColor = true;
@@ -100,7 +103,7 @@
             this.checkTime.AutoSize = true;
             this.checkTime.Checked = true;
             this.checkTime.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkTime.Location = new System.Drawing.Point(40, 278);
+            this.checkTime.Location = new System.Drawing.Point(40, 300);
             this.checkTime.Name = "checkTime";
             this.checkTime.Size = new System.Drawing.Size(117, 17);
             this.checkTime.TabIndex = 14;
@@ -132,11 +135,30 @@
             // 
             this.statusLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.statusLabel.ForeColor = System.Drawing.Color.Red;
-            this.statusLabel.Location = new System.Drawing.Point(28, 172);
+            this.statusLabel.Location = new System.Drawing.Point(15, 212);
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(200, 40);
+            this.statusLabel.Size = new System.Drawing.Size(226, 28);
             this.statusLabel.TabIndex = 12;
             this.statusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // steamGridDbLabel
+            // 
+            this.steamGridDbLabel.AutoSize = true;
+            this.steamGridDbLabel.Location = new System.Drawing.Point(50, 174);
+            this.steamGridDbLabel.MinimumSize = new System.Drawing.Size(155, 0);
+            this.steamGridDbLabel.Name = "steamGridDbLabel";
+            this.steamGridDbLabel.Size = new System.Drawing.Size(155, 13);
+            this.steamGridDbLabel.TabIndex = 23;
+            this.steamGridDbLabel.Text = "SteamGridDB Key (Optional)";
+            this.steamGridDbLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // steamGridDbBox
+            // 
+            this.steamGridDbBox.Location = new System.Drawing.Point(50, 189);
+            this.steamGridDbBox.Name = "steamGridDbBox";
+            this.steamGridDbBox.Size = new System.Drawing.Size(155, 20);
+            this.steamGridDbBox.TabIndex = 24;
+            this.steamGridDbBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // trayIcon
             // 
@@ -172,7 +194,7 @@
             // checkTray
             // 
             this.checkTray.AutoSize = true;
-            this.checkTray.Location = new System.Drawing.Point(40, 301);
+            this.checkTray.Location = new System.Drawing.Point(40, 322);
             this.checkTray.Name = "checkTray";
             this.checkTray.Size = new System.Drawing.Size(102, 17);
             this.checkTray.TabIndex = 15;
@@ -184,7 +206,7 @@
             this.checkMainMenu.AutoSize = true;
             this.checkMainMenu.Checked = true;
             this.checkMainMenu.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkMainMenu.Location = new System.Drawing.Point(40, 255);
+            this.checkMainMenu.Location = new System.Drawing.Point(40, 278);
             this.checkMainMenu.Name = "checkMainMenu";
             this.checkMainMenu.Size = new System.Drawing.Size(150, 17);
             this.checkMainMenu.TabIndex = 18;
@@ -203,7 +225,7 @@
             // UseMacDefault
             // 
             this.UseMacDefault.AutoSize = true;
-            this.UseMacDefault.Location = new System.Drawing.Point(40, 325);
+            this.UseMacDefault.Location = new System.Drawing.Point(40, 344);
             this.UseMacDefault.Name = "UseMacDefault";
             this.UseMacDefault.Size = new System.Drawing.Size(178, 17);
             this.UseMacDefault.TabIndex = 19;
@@ -232,11 +254,25 @@
             this.updateIntervalBox.Text = "10";
             this.updateIntervalBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
+            // StartWithSystem
+            // 
+            this.StartWithSystem.AutoSize = true;
+            this.StartWithSystem.Location = new System.Drawing.Point(40, 366);
+            this.StartWithSystem.Name = "StartWithSystem";
+            this.StartWithSystem.Size = new System.Drawing.Size(125, 17);
+            this.StartWithSystem.TabIndex = 22;
+            this.StartWithSystem.Text = "Start with the System";
+            this.StartWithSystem.UseVisualStyleBackColor = true;
+            this.StartWithSystem.CheckedChanged += new System.EventHandler(this.StartWithSystem_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(256, 358);
+            this.ClientSize = new System.Drawing.Size(256, 400);
+            this.Controls.Add(this.steamGridDbLabel);
+            this.Controls.Add(this.steamGridDbBox);
+            this.Controls.Add(this.StartWithSystem);
             this.Controls.Add(this.updateIntervallabel);
             this.Controls.Add(this.updateIntervalBox);
             this.Controls.Add(this.UseMacDefault);
@@ -284,6 +320,9 @@
         private System.Windows.Forms.CheckBox UseMacDefault;
         private System.Windows.Forms.Label updateIntervallabel;
         private System.Windows.Forms.TextBox updateIntervalBox;
+        private System.Windows.Forms.CheckBox StartWithSystem;
+        private System.Windows.Forms.Label steamGridDbLabel;
+        private System.Windows.Forms.TextBox steamGridDbBox;
     }
 }
 
