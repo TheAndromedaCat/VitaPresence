@@ -51,6 +51,7 @@ namespace VitaPresence_GUI
             this.StartWithSystem = new System.Windows.Forms.CheckBox();
             this.steamGridDbLabel = new System.Windows.Forms.Label();
             this.steamGridDbBox = new System.Windows.Forms.TextBox();
+            this.swapPresenceCheckbox = new System.Windows.Forms.CheckBox();
             this.trayContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -265,11 +266,23 @@ namespace VitaPresence_GUI
             this.StartWithSystem.UseVisualStyleBackColor = true;
             this.StartWithSystem.CheckedChanged += new System.EventHandler(this.StartWithSystem_CheckedChanged);
             // 
+            // swapPresenceCheckbox
+            // 
+            this.swapPresenceCheckbox.AutoSize = true;
+            this.swapPresenceCheckbox.Location = new System.Drawing.Point(40, 388);
+            this.swapPresenceCheckbox.Name = "swapPresenceCheckbox";
+            this.swapPresenceCheckbox.Size = new System.Drawing.Size(185, 17);
+            this.swapPresenceCheckbox.TabIndex = 25;
+            this.swapPresenceCheckbox.Text = "Show game name as title (on PS Vita)";
+            this.swapPresenceCheckbox.UseVisualStyleBackColor = true;
+            this.swapPresenceCheckbox.CheckedChanged += new System.EventHandler(this.SwapPresenceCheckbox_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(256, 400);
+            this.ClientSize = new System.Drawing.Size(256, 420);
+            this.Controls.Add(this.swapPresenceCheckbox);
             this.Controls.Add(this.steamGridDbLabel);
             this.Controls.Add(this.steamGridDbBox);
             this.Controls.Add(this.StartWithSystem);
@@ -323,6 +336,7 @@ namespace VitaPresence_GUI
         private System.Windows.Forms.CheckBox StartWithSystem;
         private System.Windows.Forms.Label steamGridDbLabel;
         private System.Windows.Forms.TextBox steamGridDbBox;
+        private System.Windows.Forms.CheckBox swapPresenceCheckbox;
     }
 }
 

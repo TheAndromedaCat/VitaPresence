@@ -1,8 +1,5 @@
-using DiscordRPC;
-#if DEBUG
-using DiscordRPC.Logging;
-#endif
 using Newtonsoft.Json;
+using PresenceCommon;
 using PresenceCommon.Types;
 using VitaPresence_GUI.Properties;
 using Microsoft.Win32;
@@ -27,13 +24,13 @@ namespace VitaPresence_GUI
 
         private Thread listenThread;
         private static Socket client;
-        private static DiscordRpcClient rpc;
+        private static DiscordIpcClient rpc;
         private IPAddress ipAddress;
         private int updateInterval = 10;
 
         private bool ManualUpdate = false;
         private string LastTitleID = "";
-        private Timestamps time = null;
+        private long? time = null;
         private static Timer timer;
         private bool HasSeenMacPrompt = false;
 
@@ -146,15 +143,24 @@ namespace VitaPresence_GUI
             }
             else
             {
-                listenThread.Abort();
-                if (rpc != null && !rpc.IsDisposed)
+                // Dispose the IPC client first — this closes the pipe handle,
+                // which unblocks any ReadFrameBlocking() call in the ReadLoop thread
+                // so Thread.Abort() doesn't have to interrupt native I/O.
+                try
                 {
-                    rpc.ClearPresence();
-                    rpc.Dispose();
+                    if (rpc != null && !rpc.IsDisposed)
+                    {
+                        rpc.ClearPresence();
+                        rpc.Dispose();
+                    }
                 }
+                catch { }
 
-                if (client != null) client.Close();
-                if (timer != null) timer.Dispose();
+                try { if (client != null) client.Close(); } catch { }
+                try { if (timer != null) timer.Dispose(); } catch { }
+
+                try { listenThread?.Abort(); } catch { }
+
                 listenThread = new Thread(TryConnect);
                 UpdateStatus("", Color.Gray);
                 connectButton.Text = "Connect";
@@ -193,11 +199,14 @@ namespace VitaPresence_GUI
                 rpc.Dispose();
             }
 
-            rpc = new DiscordRpcClient(clientBox.Text);
-            rpc.Initialize();
+            rpc = new DiscordIpcClient(clientBox.Text);
+            if (!rpc.Initialize())
+            {
+                UpdateStatus("Could not connect to Discord!", Color.DarkRed);
+                return;
+            }
 
-            //Create a timer that will be enabled when we lose connection to the server. 
-            //Once the full time has passed, it will clear the info it had of the previous game
+            // Create a timer that clears game info if connection is lost for 60s
             timer = new Timer()
             {
                 Interval = 60000,
@@ -205,20 +214,6 @@ namespace VitaPresence_GUI
                 Enabled = false,
             };
             timer.Elapsed += new ElapsedEventHandler(OnConnectTimeout);
-
-#if DEBUG
-            rpc.Logger = new ConsoleLogger() { Level = LogLevel.Warning };
-            //Subscribe to events
-            rpc.OnReady += (s, obj) =>
-            {
-                Console.WriteLine("Received Ready from user {0}", obj.User.Username);
-            };
-
-            rpc.OnPresenceUpdate += (s, obj) =>
-            {
-                Console.WriteLine("Received Update! {0}", obj.Presence);
-            };
-#endif
 
             SetUserInfoConnecting();
 
@@ -255,20 +250,25 @@ namespace VitaPresence_GUI
                 }
                 catch (ArgumentNullException)
                 {
-                    //The ip address is null because arp couldn't find the target mac address.
-                    //So we sleep and search for it again.
                     Thread.Sleep(1000);
                     IPAddress.TryParse(Utils.GetIpByMac(addressBox.Text), out ipAddress);
                 }
                 catch (SocketException e)
                 {
-                    UpdateStatus(e.ToString(), Color.Red);
+                    UpdateStatus(e.Message, Color.Red);
                     Thread.Sleep(2000);
-
                     client.Close();
                     if (rpc != null && !rpc.IsDisposed) rpc.ClearPresence();
-
                     SetUserInfoConnecting();
+                }
+                catch (ThreadAbortException)
+                {
+                    return; // Disconnect was clicked — exit cleanly
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatus($"Error: {ex.GetType().Name}: {ex.Message}", Color.Red);
+                    Thread.Sleep(2000);
                 }
             }
         }
@@ -305,16 +305,26 @@ namespace VitaPresence_GUI
 
                 if (LastTitleID != title.TitleID)
                 {
-                    time = Timestamps.Now;
+                    time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 }
                 if ((LastTitleID != title.TitleID) || ManualUpdate)
                 {
                     if (rpc != null)
                     {
-                        if (checkMainMenu.Checked == false && title.Index == 0)
-                            rpc.ClearPresence();
-                        else
-                            rpc.SetPresence(PresenceCommon.Utils.CreateDiscordPresence(title, time, stateBox.Text, steamGridDbBox.Text, clientBox.Text));
+                        try
+                        {
+                            if (checkMainMenu.Checked == false && title.Index == 0)
+                                rpc.ClearPresence();
+                            else
+                                rpc.SetPresence(PresenceCommon.Utils.CreateDiscordPresence(
+                                    title, time, stateBox.Text,
+                                    steamGridDbBox.Text, clientBox.Text,
+                                    swapPresenceCheckbox.Checked, checkTime.Checked));
+                        }
+                        catch (Exception ex)
+                        {
+                            UpdateStatus($"Discord error: {ex.GetType().Name}: {ex.Message}", Color.DarkRed);
+                        }
                     }
                     ManualUpdate = false;
                     LastTitleID = title.TitleID;
@@ -352,6 +362,7 @@ namespace VitaPresence_GUI
                 updateIntervalBox.Text = cfg.UpdateInterval;
                 checkTray.Checked = cfg.AllowTray;
                 checkMainMenu.Checked = cfg.DisplayMainMenu;
+                swapPresenceCheckbox.Checked = cfg.SwapPresenceStyle;
                 HasSeenMacPrompt = cfg.SeenAutoMacPrompt;
                 UseMacDefault.Checked = cfg.AutoToMac;
                 StartWithSystem.CheckedChanged -= StartWithSystem_CheckedChanged;
@@ -393,6 +404,7 @@ namespace VitaPresence_GUI
                     DisplayTimer = checkTime.Checked,
                     AllowTray = checkTray.Checked,
                     DisplayMainMenu = checkMainMenu.Checked,
+                    SwapPresenceStyle = swapPresenceCheckbox.Checked,
                     SeenAutoMacPrompt = HasSeenMacPrompt,
                     AutoToMac = UseMacDefault.Checked,
                     StartWithSystem = StartWithSystem.Checked
@@ -411,12 +423,13 @@ namespace VitaPresence_GUI
 
         private void UpdateStatus(string text, Color color)
         {
-            MethodInvoker inv = () =>
+            // BeginInvoke is non-blocking — the listen thread never waits on the UI thread,
+            // preventing deadlocks when Disconnect is clicked mid-update.
+            BeginInvoke((MethodInvoker)(() =>
             {
                 statusLabel.Text = text;
                 statusLabel.ForeColor = color;
-            };
-            Invoke(inv);
+            }));
         }
 
         private void CheckTime_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
@@ -434,6 +447,8 @@ namespace VitaPresence_GUI
         private void LinkLabel1_LinkClicked_1(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start($"https://discordapp.com/developers/applications/{clientBox.Text}");
 
         private void CheckMainMenu_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
+
+        private void SwapPresenceCheckbox_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
 
         private void UseMacDefault_CheckedChanged(object sender, EventArgs e) => HasSeenMacPrompt = true;
 
