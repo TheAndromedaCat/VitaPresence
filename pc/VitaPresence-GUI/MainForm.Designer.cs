@@ -199,7 +199,7 @@ namespace VitaPresence_GUI
             this.checkTray.Name = "checkTray";
             this.checkTray.Size = new System.Drawing.Size(102, 17);
             this.checkTray.TabIndex = 15;
-            this.checkTray.Text = "Minimize to Tray";
+            this.checkTray.Text = "Minimize to Tray on close";
             this.checkTray.UseVisualStyleBackColor = true;
             // 
             // checkMainMenu
