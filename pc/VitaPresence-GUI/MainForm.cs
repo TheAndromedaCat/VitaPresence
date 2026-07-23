@@ -10,6 +10,7 @@ using System.IO;
 using System.Media;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
@@ -40,6 +41,7 @@ namespace VitaPresence_GUI
             this.Icon = Resources.Disconnected;
             trayIcon.Icon = Resources.Disconnected;
             listenThread = new Thread(TryConnect);
+            ApplyTheme();
         }
 
         protected override void WndProc(ref Message m)
@@ -355,6 +357,9 @@ namespace VitaPresence_GUI
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+            ApplyTheme();
+
             string configPath = Utils.GetAppDataConfigPath();
             if (File.Exists(configPath))
             {
@@ -376,8 +381,17 @@ namespace VitaPresence_GUI
             }
         }
 
+        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        {
+            if (e.Category == UserPreferenceCategory.General)
+            {
+                try { BeginInvoke((MethodInvoker)(() => ApplyTheme())); } catch { }
+            }
+        }
+
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
             listenThread.Abort();
             if (rpc != null && !rpc.IsDisposed)
             {
@@ -487,6 +501,106 @@ namespace VitaPresence_GUI
             RegistryKey key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
             key.DeleteValue(appName, false);
             MessageBox.Show("Removed from system startup.");
+        }
+
+        // ── Dark Mode Engine ─────────────────────────────────────────────────
+
+        [DllImport("dwmapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+        public static bool IsWindowsDarkMode()
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                {
+                    var val = key?.GetValue("AppsUseLightTheme");
+                    if (val is int i)
+                        return i == 0;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private void ApplyTheme()
+        {
+            bool isDark = IsWindowsDarkMode();
+
+            // Set DWM dark window title bar
+            int useDarkMode = isDark ? 1 : 0;
+            int res = DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
+            if (res != 0)
+            {
+                DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref useDarkMode, sizeof(int));
+            }
+
+            Color bg = isDark ? Color.FromArgb(24, 24, 28) : SystemColors.Control;
+            Color fg = isDark ? Color.FromArgb(235, 235, 240) : SystemColors.ControlText;
+            Color cardBg = isDark ? Color.FromArgb(36, 36, 42) : SystemColors.Window;
+            Color border = isDark ? Color.FromArgb(60, 60, 70) : SystemColors.ActiveBorder;
+
+            BackColor = bg;
+            ForeColor = fg;
+
+            foreach (Control c in Controls)
+            {
+                ApplyControlTheme(c, isDark, bg, fg, cardBg, border);
+            }
+
+            if (trayContextMenu != null)
+            {
+                trayContextMenu.BackColor = cardBg;
+                trayContextMenu.ForeColor = fg;
+                foreach (ToolStripItem item in trayContextMenu.Items)
+                {
+                    item.BackColor = cardBg;
+                    item.ForeColor = fg;
+                }
+            }
+        }
+
+        private void ApplyControlTheme(Control c, bool isDark, Color bg, Color fg, Color cardBg, Color border)
+        {
+            if (c is TextBox tb)
+            {
+                tb.BackColor = cardBg;
+                tb.ForeColor = fg;
+                tb.BorderStyle = BorderStyle.FixedSingle;
+            }
+            else if (c is Button b)
+            {
+                b.FlatStyle = FlatStyle.Flat;
+                b.BackColor = isDark ? Color.FromArgb(46, 46, 56) : SystemColors.ControlLight;
+                b.ForeColor = fg;
+                b.FlatAppearance.BorderColor = border;
+            }
+            else if (c is LinkLabel ll)
+            {
+                ll.LinkColor = isDark ? Color.FromArgb(120, 180, 255) : Color.Blue;
+                ll.ActiveLinkColor = isDark ? Color.FromArgb(160, 210, 255) : Color.Red;
+            }
+            else if (c is System.Windows.Forms.CheckBox cb)
+            {
+                cb.ForeColor = fg;
+                cb.BackColor = bg;
+            }
+            else if (c is Label lbl)
+            {
+                if (lbl != statusLabel) // Preservar color del estado (Verde / Rojo / Gris)
+                {
+                    lbl.ForeColor = fg;
+                    lbl.BackColor = bg;
+                }
+            }
+
+            foreach (Control child in c.Controls)
+            {
+                ApplyControlTheme(child, isDark, bg, fg, cardBg, border);
+            }
         }
     }
 }
