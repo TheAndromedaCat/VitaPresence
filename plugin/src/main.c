@@ -7,7 +7,6 @@
 #include "main.h"
 
 int module_get_offset(SceUID pid, SceUID modid, int segidx, size_t offset, uintptr_t *addr);
-bool ksceSblACMgrIsPspEmu(SceUID pid);
 
 static SceUID g_thread_uid = -1;
 static bool g_thread_run = true;
@@ -97,7 +96,7 @@ static int get_fg_app(char *out_titleid, char *out_title) {
         // PspEmu launched through Adrenaline
         if (is_pspemu && !strncmp(bubbleid, "PSPEMUCFW", 9)) {
             SceAdrenaline adrenaline;
-            ksceKernelMemcpyUserToKernelForPid(pid, &adrenaline, (uintptr_t)0x73CDE000, sizeof(SceAdrenaline));
+            ksceKernelMemcpyUserToKernelForPid(pid, &adrenaline, (const void *)(uintptr_t)0x73CDE000, sizeof(SceAdrenaline));
 
             if (adrenaline.titleid[0] == '\0' || !strncmp(adrenaline.titleid, "XMB", 3)) {
                 snprintf(out_titleid, TITLEID_LEN, "XMB");

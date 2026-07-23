@@ -5,5 +5,5 @@ pc/packages
 pc/*/bin
 pc/*/obj
 .vs/
-
+release/
 plugin/build
