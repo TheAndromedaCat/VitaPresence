@@ -37,6 +37,8 @@ namespace VitaPresence_GUI
         public MainForm()
         {
             InitializeComponent();
+            this.Icon = Resources.Disconnected;
+            trayIcon.Icon = Resources.Disconnected;
             listenThread = new Thread(TryConnect);
         }
 
@@ -165,6 +167,7 @@ namespace VitaPresence_GUI
                 UpdateStatus("", Color.Gray);
                 connectButton.Text = "Connect";
                 connectToolStripMenuItem.Text = "Connect";
+                this.Icon = Resources.Disconnected;
                 trayIcon.Icon = Resources.Disconnected;
                 trayIcon.Text = "VitaPresence (Disconnected)";
 
@@ -187,6 +190,7 @@ namespace VitaPresence_GUI
         private void SetUserInfoConnecting()
         {
             UpdateStatus("Attemping to connect to PS Vita...", Color.Gray);
+            this.Icon = Resources.Disconnected;
             trayIcon.Icon = Resources.Disconnected;
             trayIcon.Text = "VitaPresence (Connecting...)";
         }
@@ -282,6 +286,7 @@ namespace VitaPresence_GUI
             Title title = new Title(bytes);
             if (title.Magic == 0xCAFECAFE)
             {
+                this.Icon = Resources.Connected;
                 trayIcon.Icon = Resources.Connected;
                 trayIcon.Text = "VitaPresence (Connected)";
 

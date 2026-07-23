@@ -152,4 +152,8 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\ILMerge.3.0.41\build\ILMerge.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILMerge.3.0.41\build\ILMerge.props'))" />
   </Target>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PostBuildEvent>"$(SolutionDir)packages\ILMerge.3.0.41\tools\net452\ILMerge.exe" /targetplatform:v4 /target:winexe /out:"$(TargetDir)$(TargetName)-Standalone.exe" "$(TargetPath)" "$(TargetDir)PresenceCommon.dll" "$(TargetDir)Newtonsoft.Json.dll"
+move /y "$(TargetDir)$(TargetName)-Standalone.exe" "$(TargetPath)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
