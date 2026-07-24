@@ -175,6 +175,68 @@ namespace PresenceCommon
             return null;
         }
 
+        private static readonly Dictionary<string, string> VitaCodeAssetBypassMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static bool vitaCodesLoaded = false;
+        private static readonly object vitaCodesLock = new object();
+
+        public static void EnsureVitaCodesLoaded()
+        {
+            if (vitaCodesLoaded) return;
+            lock (vitaCodesLock)
+            {
+                if (vitaCodesLoaded) return;
+
+                // Built-in defaults matching vita-codes.txt
+                VitaCodeAssetBypassMap["NPXS10007"] = "welc";
+                VitaCodeAssetBypassMap["NPXS10002"] = "psstore";
+                VitaCodeAssetBypassMap["NPXS10003"] = "www";
+                VitaCodeAssetBypassMap["NPXS10026"] = "cman";
+                VitaCodeAssetBypassMap["NPXS10006"] = "friend";
+                VitaCodeAssetBypassMap["NPXS10072"] = "email";
+                VitaCodeAssetBypassMap["NPXS10009"] = "music";
+                VitaCodeAssetBypassMap["NPXS10013"] = "ps4";
+                VitaCodeAssetBypassMap["NPXS10001"] = "party";
+                VitaCodeAssetBypassMap["NPXS10000"] = "near";
+                VitaCodeAssetBypassMap["NPXS10010"] = "videos";
+                VitaCodeAssetBypassMap["NPXS10094"] = "parent";
+                VitaCodeAssetBypassMap["NPXS10012"] = "ps4";
+                VitaCodeAssetBypassMap["NPXS10091"] = "calendar";
+                VitaCodeAssetBypassMap["NPXS10014"] = "messages";
+                VitaCodeAssetBypassMap["NPXS10004"] = "photo";
+                VitaCodeAssetBypassMap["NPXS10015"] = "settings";
+                VitaCodeAssetBypassMap["NPXS10008"] = "trophy";
+                VitaCodeAssetBypassMap["mainmenu"]   = "mainmenu";
+
+                // Load runtime overrides from vita-codes.txt if present
+                string localFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vita-codes.txt");
+                if (File.Exists(localFile))
+                {
+                    try
+                    {
+                        foreach (var rawLine in File.ReadAllLines(localFile))
+                        {
+                            string line = rawLine?.Trim();
+                            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("//")) continue;
+
+                            string[] parts = line.Split(new char[] { '-', ':', '=' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length >= 2)
+                            {
+                                string assetName = parts[0].Trim().ToLower();
+                                string tId = parts[1].Trim().ToUpper();
+                                if (!string.IsNullOrEmpty(assetName) && !string.IsNullOrEmpty(tId))
+                                {
+                                    VitaCodeAssetBypassMap[tId] = assetName;
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                vitaCodesLoaded = true;
+            }
+        }
+
         /// <summary>
         /// Multi-tiered cover resolution pipeline according to COVER_IMAGES_FLOW.md.
         /// Returns a tuple: (image_url_or_key, source_description)
@@ -186,6 +248,8 @@ namespace PresenceCommon
             string steamGridDbApiKey = null,
             string clientId = null)
         {
+            EnsureVitaCodesLoaded();
+
             string clientIdStr = string.IsNullOrWhiteSpace(clientId) ? DEFAULT_CLIENT_ID : clientId.Trim();
             string cleanTitleId = titleId?.Trim() ?? "";
             string cleanGameTitle = gameTitle?.Trim() ?? "";
@@ -198,6 +262,18 @@ namespace PresenceCommon
             }
 
             Tuple<string, string> result = null;
+
+            // Tier 0: Direct Bypass for System Apps / Vita Codes (bypasses SteamGridDB & GameTDB)
+            if (!string.IsNullOrWhiteSpace(cleanTitleId) && VitaCodeAssetBypassMap.TryGetValue(cleanTitleId, out string customAssetKey))
+            {
+                string discordUrl = FetchDiscordAssetUrl(clientIdStr, customAssetKey, DEFAULT_FALLBACK_KEY);
+                if (!string.IsNullOrEmpty(discordUrl))
+                {
+                    result = Tuple.Create(discordUrl, $"Discord Asset ('{customAssetKey}')");
+                    ResolvedCoversCache[cacheKey] = result;
+                    return result;
+                }
+            }
 
             // Tier 1: SteamGridDB Title-Based Search
             if (!string.IsNullOrWhiteSpace(cleanApiKey) && !string.IsNullOrWhiteSpace(cleanGameTitle))

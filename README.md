@@ -13,6 +13,7 @@ Works with PS Vita games, LiveArea home screen, homebrew applications, and Adren
 ## ✨ Features
 
 - **Automatic Multi-Tier Cover Resolution**:
+  - ⚡ **Tier 0 (System Apps & Vita Codes Bypass)**: Direct mapping for system applications and homebrew (`NPXS10007` -> `welc`, `NPXS10015` -> `settings`, etc.) specified in `vita-codes.txt`. Instantly bypasses external searches to use high-res Discord application assets.
   - 🥇 **Tier 1 (SteamGridDB)**: Title-based search prioritizing 1:1 square grid artwork (`1024x1024`, `512x512`) when a SteamGridDB API key is provided. Automatic title sanitization removes Vita edition suffixes (`: Playstation®Vita Edition`, `®`, `™`) for accurate matches.
   - 🥈 **Tier 2 (GameTDB)**: Direct system and region-mapped cover art database resolution (`https://art.gametdb.com/psv/cover/{REGION}/{TITLE_ID}.jpg`) with region fallbacks (`US`, `EN`, `JA`, `KO`, `ZH`).
   - 🥉 **Tier 3 (Discord Developer App Asset Fallback)**: Queries Discord Developer Portal application assets via CDN (`https://cdn.discordapp.com/app-assets/{client_id}/{asset_id}.png`), defaulting to App ID `1354524447746293901` and fallback asset key `"vita"`.
