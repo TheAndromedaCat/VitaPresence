@@ -1,3 +1,4 @@
+[![PS3 Rich Presence](https://i.imgur.com/koKT4by.png)](https://github.com/TheAndromedaCat/PS3-Rich-Presence-for-Discord)
 # VitaPresence
 
 Change your Discord Rich Presence to display your currently playing PS Vita game with automatic high-resolution cover art!
