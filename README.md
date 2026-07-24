@@ -2,7 +2,8 @@
 
 Change your Discord Rich Presence to display your currently playing PS Vita game with automatic high-resolution cover art!
 
-![vitapresence](https://user-images.githubusercontent.com/12598379/78289782-fc45eb80-7522-11ea-8d5c-1deb49b1cb9c.png)
+<img width="3264" height="1824" alt="VitaPresence" src="https://github.com/user-attachments/assets/cfc15434-8487-48cc-b995-13f9c44db5f1" />
+
 
 Works with PS Vita games, LiveArea home screen, homebrew applications, and Adrenaline (including custom bubbles).
 
