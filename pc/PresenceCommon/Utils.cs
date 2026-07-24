@@ -27,6 +27,10 @@ namespace PresenceCommon
             bool swapPresenceStyle   = false,
             bool showTimer           = true)
         {
+            bool isPstv = (title.Magic == 0xCAFECAFF);
+            string deviceName = isPstv ? "PlayStation TV" : "PlayStation Vita";
+            string onDevice   = isPstv ? "on PlayStation TV" : "on PS Vita";
+
             string titleId   = title.Index == 0 ? "mainmenu" : title.TitleID;
             string titleName = title.Index == 0 ? "LiveArea"  : title.TitleName;
 
@@ -46,22 +50,29 @@ namespace PresenceCommon
 
             if (title.Index == 0)
             {
-                // LiveArea — swap style doesn't apply
-                activity.Name    = null;
-                activity.Details = "In the LiveArea";
-                activity.State   = state;
+                if (swapPresenceStyle)
+                {
+                    activity.Name    = "LiveArea";
+                    activity.Details = onDevice;
+                }
+                else
+                {
+                    activity.Name    = deviceName;
+                    activity.Details = "In the LiveArea";
+                }
+                activity.State = state;
             }
             else if (swapPresenceStyle)
             {
-                // Game name becomes the bold title; "on PS Vita" is the subtitle
+                // Game name becomes the bold title; "on PlayStation TV" or "on PS Vita" is the subtitle
                 activity.Name    = titleName;
-                activity.Details = "on PS Vita";
-                activity.State   = null;
+                activity.Details = onDevice;
+                activity.State   = string.IsNullOrWhiteSpace(state) ? null : state;
             }
             else
             {
-                // Default: registered app name stays bold, game name is Details
-                activity.Name    = null;
+                // Default: "PlayStation TV" or "PlayStation Vita" is the bold title, game name is Details
+                activity.Name    = deviceName;
                 activity.Details = titleName;
                 activity.State   = state;
             }

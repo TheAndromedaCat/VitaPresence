@@ -115,7 +115,7 @@ namespace VitaPresence_CLI
             if (cnt <= 0) return;
 
             Title title = new Title(bytes);
-            if (title.Magic == 0xCAFECAFE)
+            if (title.Magic == 0xCAFECAFE || title.Magic == 0xCAFECAFF)
             {
                 if (LastGame != title.TitleID)
                 {

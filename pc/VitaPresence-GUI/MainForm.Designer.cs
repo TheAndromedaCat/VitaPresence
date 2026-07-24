@@ -160,6 +160,7 @@ namespace VitaPresence_GUI
             this.steamGridDbBox.Size = new System.Drawing.Size(155, 20);
             this.steamGridDbBox.TabIndex = 24;
             this.steamGridDbBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.steamGridDbBox.TextChanged += new System.EventHandler(this.SteamGridDbBox_TextChanged);
             // 
             // trayIcon
             // 

@@ -19,11 +19,10 @@ link_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_executable(${PROJECT_NAME}
-  src/main.c
-)
-
-target_link_libraries(${PROJECT_NAME}
+# 1. VitaPresence target (magic = 0xCAFECAFE)
+add_executable(VitaPresence src/main.c)
+target_compile_definitions(VitaPresence PRIVATE VITAPRESENCE_MAGIC=0xCAFECAFE)
+target_link_libraries(VitaPresence
   gcc
   taihenForKernel_stub
   taihenModuleUtils_stub
@@ -34,10 +33,26 @@ target_link_libraries(${PROJECT_NAME}
   SceSysmemForDriver_stub
   SceIofilemgrForDriver_stub
 )
-
-vita_create_self(${PROJECT_NAME}.skprx ${PROJECT_NAME}
+vita_create_self(VitaPresence.skprx VitaPresence
   UNSAFE
-  CONFIG ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.yml
+  CONFIG ${CMAKE_SOURCE_DIR}/VitaPresence.yml
 )
 
-# vita_create_stubs(stubs ${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.yml KERNEL)
+# 2. PSTVPresence target (magic = 0xCAFECAFF)
+add_executable(PSTVPresence src/main.c)
+target_compile_definitions(PSTVPresence PRIVATE VITAPRESENCE_MAGIC=0xCAFECAFF)
+target_link_libraries(PSTVPresence
+  gcc
+  taihenForKernel_stub
+  taihenModuleUtils_stub
+  SceThreadmgrForDriver_stub
+  SceSysclibForDriver_stub
+  SceNetPsForDriver_stub
+  SceSblACMgrForDriver_stub
+  SceSysmemForDriver_stub
+  SceIofilemgrForDriver_stub
+)
+vita_create_self(PSTVPresence.skprx PSTVPresence
+  UNSAFE
+  CONFIG ${CMAKE_SOURCE_DIR}/VitaPresence.yml
+)

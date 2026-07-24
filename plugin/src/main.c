@@ -174,7 +174,11 @@ static int vitapresence_thread(SceSize args, void *argp) {
             if (client_sockfd < 0)
                 break;
 
-            presence_data.magic = 0xCAFECAFE;
+#ifndef VITAPRESENCE_MAGIC
+#define VITAPRESENCE_MAGIC 0xCAFECAFE
+#endif
+
+            presence_data.magic = VITAPRESENCE_MAGIC;
             presence_data.index = get_fg_app(presence_data.titleid, presence_data.title);
 
             ret = ksceNetSend(client_sockfd, &presence_data, sizeof(vitapresence_data_t), 0);

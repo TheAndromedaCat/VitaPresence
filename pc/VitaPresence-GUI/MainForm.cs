@@ -34,6 +34,7 @@ namespace VitaPresence_GUI
         private long? time = null;
         private static Timer timer;
         private bool HasSeenMacPrompt = false;
+        private Title currentTitle = null;
 
         public MainForm()
         {
@@ -286,8 +287,9 @@ namespace VitaPresence_GUI
             int cnt = client.Receive(bytes);
 
             Title title = new Title(bytes);
-            if (title.Magic == 0xCAFECAFE)
+            if (title.Magic == 0xCAFECAFE || title.Magic == 0xCAFECAFF)
             {
+                currentTitle = title;
                 this.Icon = Resources.Connected;
                 trayIcon.Icon = Resources.Connected;
                 trayIcon.Text = "VitaPresence (Connected)";
@@ -451,23 +453,51 @@ namespace VitaPresence_GUI
             }));
         }
 
-        private void CheckTime_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void TriggerImmediatePresenceUpdate()
+        {
+            ManualUpdate = true;
+            if (rpc != null && rpc.IsConnected && currentTitle != null)
+            {
+                try
+                {
+                    if (checkMainMenu.Checked == false && currentTitle.Index == 0)
+                    {
+                        rpc.ClearPresence();
+                    }
+                    else
+                    {
+                        rpc.SetPresence(PresenceCommon.Utils.CreateDiscordPresence(
+                            currentTitle, time, stateBox.Text,
+                            steamGridDbBox.Text, clientBox.Text,
+                            swapPresenceCheckbox.Checked, checkTime.Checked));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatus($"Discord error: {ex.GetType().Name}: {ex.Message}", Color.DarkRed);
+                }
+            }
+        }
 
-        private void BigKeyBox_TextChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void CheckTime_CheckedChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
-        private void SKeyBox_TextChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void BigKeyBox_TextChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
-        private void StateBox_TextChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void SKeyBox_TextChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
-        private void BigTextBox_TextChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void StateBox_TextChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
+
+        private void SteamGridDbBox_TextChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
+
+        private void BigTextBox_TextChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
         private void TrayExitMenuItem_Click(object sender, EventArgs e) => Application.Exit();
 
         private void LinkLabel1_LinkClicked_1(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start($"https://discordapp.com/developers/applications/{clientBox.Text}");
 
-        private void CheckMainMenu_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void CheckMainMenu_CheckedChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
-        private void SwapPresenceCheckbox_CheckedChanged(object sender, EventArgs e) => ManualUpdate = true;
+        private void SwapPresenceCheckbox_CheckedChanged(object sender, EventArgs e) => TriggerImmediatePresenceUpdate();
 
         private void UseMacDefault_CheckedChanged(object sender, EventArgs e) => HasSeenMacPrompt = true;
 

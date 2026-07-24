@@ -24,14 +24,20 @@ Works with PS Vita games, LiveArea home screen, homebrew applications, and Adren
 
 ## 🛠️ Setup & Installation
 
-### 1. PS Vita Plugin
-1. Copy `VitaPresence.skprx` to `ur0:tai/` or `ux0:tai/`.
-2. Add the plugin under the `*KERNEL` section of your `config.txt`:
-   ```ini
-   *KERNEL
-   ur0:tai/VitaPresence.skprx
-   ```
-3. Reboot your PS Vita or reload `config.txt` via taiHEN menu.
+### 1. PS Vita & PlayStation TV Plugins
+- **For PS Vita**: Copy `VitaPresence.skprx` to `ur0:tai/` or `ux0:tai/`.
+- **For PlayStation TV**: Copy `PSTVPresence.skprx` to `ur0:tai/` or `ux0:tai/`.
+
+Add the plugin under the `*KERNEL` section of your `config.txt`:
+```ini
+*KERNEL
+ur0:tai/VitaPresence.skprx
+# OR for PlayStation TV:
+# ur0:tai/PSTVPresence.skprx
+```
+Reboot your console or reload `config.txt` via the taiHEN menu.
+
+> **Note**: Both `VitaPresence-GUI.exe` and `VitaPresence-CLI.exe` automatically detect whether `VitaPresence.skprx` or `PSTVPresence.skprx` is connected, displaying **PlayStation Vita** or **PlayStation TV** presence accordingly.
 
 ### 2. PC Application (GUI or CLI)
 1. Run `VitaPresence-GUI.exe` or `VitaPresence-CLI.exe` on your Windows PC (must be on the same Wi-Fi network as your Vita).
@@ -48,7 +54,7 @@ Works with PS Vita games, LiveArea home screen, homebrew applications, and Adren
   ```cmd
   MSBuild pc/VitaPresence.sln
   ```
-- **Vita Plugin**: Built using [VitaSDK](https://vitasdk.org/):
+- **Kernel Plugins (`VitaPresence.skprx` & `PSTVPresence.skprx`)**: Built using [VitaSDK](https://vitasdk.org/):
   ```bash
   cd plugin
   mkdir build && cd build
